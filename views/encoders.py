@@ -2,6 +2,7 @@ import json
 from bson import ObjectId
 from pymongo.collection import Collection
 
+
 class MongoJsonEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, ObjectId):
@@ -12,4 +13,6 @@ class MongoJsonEncoder(json.JSONEncoder):
 def insert(collection: Collection, document: dict):
     """Ensure the newly inserted document does not contain _id"""
     collection.insert_one(document)
-    document.pop("_id")
+    document["_id"] = json.loads(json.dumps(document["_id"],
+                                            cls=MongoJsonEncoder))
+    return document
