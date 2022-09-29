@@ -5,5 +5,6 @@ from . import events as event_api
 urlpatterns = [
     path('users', user_api.create_user, name="create user"),
     path('users/profile', user_api.profile, name="get user profile"),
-    path('events', event_api.events, name="events api")
+    path('events', event_api.events, name="events api"),
+    path('events/chat', event_api.event_chats, name="chat rooms for one event")
 ]

@@ -85,3 +85,19 @@ def events(request: HttpRequest):
                 "data": new_event
             },
         )
+
+@csrf_exempt
+def event_chats(request: HttpRequest):
+    params = request.POST
+    chat_info = params.get("chat_info")
+    event_id: str = params.get("event_id")
+    event_collection.update_one(
+        {"_id": ObjectId(event_id)},
+        {"$set": {"chat": chat_info}}
+    )
+    return JsonResponse(
+        data={
+            "msg": "Update OK",
+            "data": []
+        }
+    )
