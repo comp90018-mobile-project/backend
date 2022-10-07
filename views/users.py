@@ -104,3 +104,28 @@ def profile(request: HttpRequest):
 #     # 某些人可能参加了多场活动，去重
 #     potential_contacts = list(set(potential_contacts))
 #     # Potential contacts保存所有人的username
+
+
+def create_user_test(username,password):
+    """Add a new user to the system."""
+    collection.insert_one({
+        "username": username,
+        "password": password
+    })
+    # Create user profile at the same time
+    user_profile = {
+        "username": username,
+        "nickname": "vv",
+        "signature": "A goose on earth",
+        "friends": [],
+        "event_history": [],
+        "community": [],
+        "health_status": "negative"
+    }
+    insert(profile_collection, user_profile)
+    return JsonResponse(
+        data={
+            "msg": "success",
+            "data": user_profile
+        },
+    )

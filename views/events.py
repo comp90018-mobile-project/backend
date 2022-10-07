@@ -5,6 +5,8 @@ from pymongo.collection import Collection
 # from rest_framework.response import Response
 # from rest_framework.decorators import api_view, renderer_classes
 # from rest_framework.renderers import JSONRenderer
+from rest_framework.decorators import api_view
+
 from . import config
 from .encoders import MongoJsonEncoder, insert
 import json
@@ -17,7 +19,6 @@ collection: Collection = client.COMP90018.Users
 profile_collection: Collection = client.COMP90018.Profile
 event_collection: Collection = client.COMP90018.Events
 now = arrow.now(tz="Australia/Melbourne").format("YYYY-MM-DD HH:mm:ss")
-
 
 
 
@@ -52,17 +53,27 @@ def events(request: HttpRequest):
             },
         )
     elif request.method == "POST":
-        params = copy.deepcopy(request.body)
-        if request.POST:
-            params = request.POST
-        name = params.get("name")
-        organiser = params.get("organiser")
-        preview = params.get("preview")
-        longitude = params.get("longitude")
-        latitude = params.get("latitude")
-        participants = params.get("participants")
-        settings = params.get("settings")
-        images = params.get("images")
+        # params = copy.deepcopy(request.body)
+        # if request.POST:
+        #     params = request.POST
+        # name = params.get("name")
+        # organiser = params.get("organiser")
+        # preview = params.get("preview")
+        # longitude = params.get("longitude")
+        # latitude = params.get("latitude")
+        # participants = params.get("participants")
+        # settings = params.get("settings")
+        # images = params.get("images")
+        data = request.body
+        data_dict = json.loads(data.decode("utf-8"))
+        name = data_dict["name"]
+        organiser = data_dict["organiser"]
+        preview = data_dict["preview"]
+        longitude = data_dict["longitude"]
+        latitude = data_dict["latitude"]
+        participants = data_dict["participants"]
+        settings = data_dict["settings"]
+        images = data_dict["images"]
         new_event = {
             "name": name,
             "organiser": organiser,
