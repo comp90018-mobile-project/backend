@@ -106,6 +106,17 @@ def event_chats(request: HttpRequest):
         {"_id": ObjectId(event_id)},
         {"$set": {"chat": chat_info}}
     )
+    """
+    [
+        {
+            _id: 1,
+            sender_name: ZIAWANG1,
+            time: xxx,
+            content: ,
+            mention
+        }
+    ]
+    """
     return JsonResponse(
         data={
             "msg": "Update OK",

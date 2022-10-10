@@ -38,7 +38,8 @@ def create_user(request: HttpRequest):
         "friends": [],
         "event_history": [],
         "community": [],
-        "health_status": "negative"
+        "health_status": "negative",
+        "avatar": config.DEFAULT_AVATAR
     }
     insert(profile_collection, user_profile)
     return JsonResponse(
