@@ -24,8 +24,10 @@ event_collection: Collection = client.COMP90018.Events
 # @renderer_classes([JSONRenderer])
 def create_user(request: HttpRequest):
     """Add a new user to the system."""
-    username = request.POST.get(key="username")
-    password = request.POST.get(key="password")
+    data = request.body
+    data_dict = json.loads(data.decode("utf-8"))
+    username = data_dict["username"]
+    password = data_dict["password"]
     collection.insert_one({
         "username": username,
         "password": password
