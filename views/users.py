@@ -11,6 +11,8 @@ import json
 from django.http import HttpRequest, JsonResponse
 from bson import ObjectId
 import copy
+from datetime import datetime
+import datetime
 
 # Global definition for database driver connection
 client: pymongo.MongoClient = pymongo.MongoClient(config.MONGO_ADDR)
@@ -121,7 +123,7 @@ def create_user_test(username,password):
         "nickname": "vv",
         "signature": "A goose on earth",
         "friends": [],
-        "event_history": [],
+        "event_history": ["event5"],
         "community": [],
         "health_status": "negative"
     }
@@ -132,3 +134,35 @@ def create_user_test(username,password):
             "data": user_profile
         },
     )
+
+# create_user_test("u4","04")
+
+#
+def mark_user_positive(username):
+    possible_result = profile_collection.find_one({"username": username})
+    event_history = possible_result.get("event_history")
+    tod = datetime.datetime.now()
+    d = datetime.timedelta(days=3)
+    start_time = tod - d
+    # start from this time, users who join the same event with the marked user will get notification
+    # start_time = start_time.strftime("%Y-%m-%d %H:%M:%S")
+    # find all close contact
+    all_close_contact = []
+    for event_name in event_history:
+        event = event_collection.find_one({"name":event_name})
+        event_time = event.get("created_at")
+        print(datetime.datetime.strptime(event_time, "%Y-%m-%d %H:%M:%S"))
+        print(type(start_time))
+        if datetime.datetime.strptime(event_time, "%Y-%m-%d %H:%M:%S") > start_time:
+            all_close_contact += event.get("participants")
+    #去重
+    all_close_contact = list(set(all_close_contact))
+    all_close_contact.remove(username)
+    print(all_close_contact)
+
+
+
+def test():
+    mark_user_positive("u1")
+
+test()
