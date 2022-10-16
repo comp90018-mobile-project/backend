@@ -1,3 +1,5 @@
+from zoneinfo import ZoneInfo
+
 from django.views.decorators.csrf import csrf_exempt
 import pymongo
 from pymongo.collection import Collection
@@ -111,7 +113,7 @@ def profile(request: HttpRequest):
 #     # Potential contacts保存所有人的username
 
 
-def create_user_test(username,password):
+def create_user_test(username, password):
     """Add a new user to the system."""
     collection.insert_one({
         "username": username,
@@ -135,6 +137,7 @@ def create_user_test(username,password):
         },
     )
 
+
 # create_user_test("u4","04")
 
 #
@@ -149,20 +152,22 @@ def mark_user_positive(username):
     # find all close contact
     all_close_contact = []
     for event_name in event_history:
-        event = event_collection.find_one({"name":event_name})
+        event = event_collection.find_one({"name": event_name})
         event_time = event.get("created_at")
         print(datetime.datetime.strptime(event_time, "%Y-%m-%d %H:%M:%S"))
         print(type(start_time))
         if datetime.datetime.strptime(event_time, "%Y-%m-%d %H:%M:%S") > start_time:
             all_close_contact += event.get("participants")
-    #去重
+    # 去重
     all_close_contact = list(set(all_close_contact))
     all_close_contact.remove(username)
     print(all_close_contact)
 
 
+# def test():
+    # mark_user_positive("u1")
+    # d1 = datetime.datetime.strptime('2022-10-16T05:45:00.000Z', '%Y-%m-%dT%H:%M:%S.%f%z').astimezone(ZoneInfo('Australia/Melbourne')).strftime('%Y-%m-%d %H:%M:%S')
+    # print("d1",d1)
 
-def test():
-    mark_user_positive("u1")
 
-test()
+# test()

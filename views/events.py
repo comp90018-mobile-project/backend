@@ -1,3 +1,5 @@
+from zoneinfo import ZoneInfo
+
 from django.views.decorators.csrf import csrf_exempt
 import pymongo
 from pymongo.collection import Collection
@@ -13,6 +15,9 @@ from django.http import HttpRequest, JsonResponse
 import copy
 import arrow
 from bson import ObjectId
+from datetime import datetime
+import datetime
+
 client: pymongo.MongoClient = pymongo.MongoClient(config.MONGO_ADDR)
 collection: Collection = client.COMP90018.Users
 profile_collection: Collection = client.COMP90018.Profile
@@ -30,6 +35,22 @@ def events(request: HttpRequest):
         for d in data:
             res.append(d)
         res = json.loads(json.dumps(res, cls=MongoJsonEncoder))
+        for event in res:
+            event_id = event['_id']
+            s_time = event['settings']['start_time']
+            s_time = datetime.datetime.strptime(s_time, '%Y-%m-%dT%H:%M:%S.%f%z').astimezone(ZoneInfo('Australia/Melbourne')).strftime('%Y-%m-%d %H:%M:%S')
+            start_time = datetime.datetime.strptime(s_time, "%Y-%m-%d %H:%M:%S")
+            duration = event['settings']['duration']
+            duration = event['settings']['duration'].split()
+            duration = int(duration[0])
+            d = datetime.timedelta(minutes=duration)
+            end_time = start_time + d
+            print(end_time)
+            if datetime.datetime.strptime(now, "%Y-%m-%d %H:%M:%S") > end_time:
+                # event_collection.update_one(filter={"_id": ObjectId(event_id)}, update={"$set": {"active": False}})
+                print(event_id,True)
+
+
         return JsonResponse(
             data={
                 "msg": "success",
@@ -82,6 +103,7 @@ def events(request: HttpRequest):
             "participants": participants,
             "settings": settings,
             "images": images,
+            "active": True,
             "created_at": now
         }
         # Keep a unique reference to this new event
