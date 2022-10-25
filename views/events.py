@@ -41,14 +41,25 @@ def events(request: HttpRequest):
             s_time = datetime.datetime.strptime(s_time, '%Y-%m-%dT%H:%M:%S.%f%z').astimezone(ZoneInfo('Australia/Melbourne')).strftime('%Y-%m-%d %H:%M:%S')
             start_time = datetime.datetime.strptime(s_time, "%Y-%m-%d %H:%M:%S")
             duration = event['settings']['duration']
-            duration = event['settings']['duration'].split()
-            duration = int(duration[0])
-            d = datetime.timedelta(minutes=duration)
+            duration_mins = 0
+            if duration == "30 mins":
+                duration_mins = 30
+            elif duration == "1 hour":
+                duration_mins = 60
+            elif duration == "1 hour 30 mins":
+                duration_mins = 90
+            elif duration == "2 hours":
+                duration_mins = 120
+            elif duration == "2 hours 30 mins":
+                duration_mins = 150
+            else:
+                duration_mins = 180
+            d = datetime.timedelta(minutes=duration_mins)
             end_time = start_time + d
             print(end_time)
             if datetime.datetime.strptime(now, "%Y-%m-%d %H:%M:%S") > end_time:
-                # event_collection.update_one(filter={"_id": ObjectId(event_id)}, update={"$set": {"active": False}})
-                print(event_id,True)
+                event_collection.update_one(filter={"_id": ObjectId(event_id)}, update={"$set": {"active": False}})
+                print(event_id,False)
 
 
         return JsonResponse(

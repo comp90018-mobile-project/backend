@@ -140,7 +140,7 @@ def create_user_test(username, password):
 
 # create_user_test("u4","04")
 
-#
+
 def mark_user_positive(username):
     possible_result = profile_collection.find_one({"username": username})
     event_history = possible_result.get("event_history")
