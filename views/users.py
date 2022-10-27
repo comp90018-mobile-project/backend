@@ -30,20 +30,20 @@ def create_user(request: HttpRequest):
     """Add a new user to the system."""
     data = request.body
     data_dict = json.loads(data.decode("utf-8"))
+    email = data_dict["email"]
     username = data_dict["username"]
     password = data_dict["password"]
     collection.insert_one({
-        "username": username,
+        "email": email,
         "password": password
     })
     # Create user profile at the same time
     user_profile = {
         "username": username,
-        "nickname": "Echo",
-        "signature": "A goose on earth",
-        "friends": [],
+        "email": email,
+        "event_participated": [],
+        "event_hosted": [],
         "event_history": [],
-        "community": [],
         "health_status": "negative",
         "avatar": config.DEFAULT_AVATAR
     }
