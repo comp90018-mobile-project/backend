@@ -3,10 +3,13 @@ from zoneinfo import ZoneInfo
 from django.views.decorators.csrf import csrf_exempt
 import pymongo
 from pymongo.collection import Collection
-# from rest_framework import status
-# from rest_framework.response import Response
-# from rest_framework.decorators import api_view, renderer_classes
-# from rest_framework.renderers import JSONRenderer
+from exponent_server_sdk import (
+    DeviceNotRegisteredError,
+    PushClient,
+    PushMessage,
+    PushServerError,
+    PushTicketError,
+)
 from . import config
 from .encoders import MongoJsonEncoder, insert
 import json
@@ -43,7 +46,8 @@ def create_user(request: HttpRequest):
         "email": email,
         "event_participated": [],
         "event_hosted": [],
-        "event_history": [],
+        # "event_history": [],
+        "push_token": '',
         "health_status": "negative",
         "avatar": config.DEFAULT_AVATAR
     }
@@ -61,8 +65,8 @@ def create_user(request: HttpRequest):
 def profile(request: HttpRequest):
     """Get user profile"""
     if request.method == "GET":
-        username = request.GET.get(key="username")
-        possible_result = profile_collection.find_one({"username": username})
+        email = request.GET.get(key="email")
+        possible_result = profile_collection.find_one({"email": email})
         return JsonResponse(
             data={
                 "msg": "success",
@@ -72,11 +76,11 @@ def profile(request: HttpRequest):
         )
     elif request.method == "POST":
         params = copy.deepcopy(eval(request.body))
-        if request.POST:
-            params = request.POST
-        username: str = params.get("username")
+        # if request.POST:
+        #     params = request.POST
+        email: str = params.get("email")
         query: dict = params.get("query")
-        query_filter = {"username": username}
+        query_filter = {"email": email}
         new_values = {"$set": query}
         res = profile_collection.update_one(
             filter=query_filter, update=new_values
@@ -89,28 +93,87 @@ def profile(request: HttpRequest):
         )
 
 
-# @csrf_exempt
-# @api_view(["POST"])
-# @renderer_classes([JSONRenderer])
-# def mark_user_infected(request: HttpRequest):
-#     username = request.POST.get(key="username")
-#     user_filter = {"username": username}
-#     # 将username标记为已被感染
-#     profile_collection.update_one(user_filter, {"$set": {
-#         "health_status": "positive"}})
-#     # 获取这个人最近3天参加过的所有活动
-#     user_info = profile_collection.find_one(user_filter)
-#     # event history存储所有event id
-#     activities = user_info.get("event_history")
-#     potential_contacts = []
-#     for event_id in activities:
-#         event_info = event_collection.find_one({"_id": ObjectId(event_id)})
-#         potential_contacts.extend(
-#             event_info.get("participants", [])
-#         )
-#     # 某些人可能参加了多场活动，去重
-#     potential_contacts = list(set(potential_contacts))
-#     # Potential contacts保存所有人的username
+@csrf_exempt
+def push(request: HttpRequest):
+    if request.method == "POST":
+        params = copy.deepcopy(eval(request.body))
+        email: str = params.get("email")
+        possible_result = profile_collection.find_one({"email": email})
+        event_participated = possible_result.get("event_participated")
+        event_hosted = possible_result.get("event_hosted")
+        tod = datetime.datetime.now()
+        d = datetime.timedelta(days=3)
+        start_time = tod - d
+        # # start from this time, users who join the same event with the marked user will get notification
+        # # start_time = start_time.strftime("%Y-%m-%d %H:%M:%S")
+        # # find all close contact
+        all_close_contact = []
+        for event in event_participated + event_hosted:
+            event: dict
+            event_time = event.get("created_at")
+            participants = event.get("participants")
+            # print(datetime.datetime.strptime(event_time, "%Y-%m-%d %H:%M:%S"))
+            # print(type(start_time))
+            if datetime.datetime.strptime(event_time, "%Y-%m-%d %H:%M:%S") > start_time:
+                # all_close_contact += event.get("participants")
+                for participant in participants:
+                    all_close_contact.append(participant.get("email"))
+        # 去重
+        new_values = {"$set": {"health_status": "pending"}}
+        filter_ = {"email": email}
+        all_close_contact = list(set(all_close_contact))
+        all_close_contact.remove(email)
+        # Push tokens
+        messages = []
+        for user_email in all_close_contact:
+            # 密接赋黄码
+            profile_collection.update_one(
+                filter=filter_, update=new_values
+            )
+            # 拿token
+            res = profile_collection.find_one(filter_)
+            token = res.get("push_token", "")
+            username = res.get("username", "")
+            message = PushMessage(to=token, body=f"{username} has been confirmed with COVID-19!", title="COVID Warning")
+            messages.append(message)
+        try:
+            response = PushClient().publish_multiple(messages)
+        except PushServerError as err:
+            return JsonResponse(
+                data={
+                    "msg": "Not OK.",
+                    "data": str(err)
+                },
+                status=400
+            )
+        try:
+            response.validate_response()
+        except DeviceNotRegisteredError as err:
+            # Mark the push token as inactive
+            return JsonResponse(
+                data={
+                    "msg": "This token is not activated.",
+                    "data": str(err)
+                },
+                status=400
+            )
+        except PushTicketError as exc:
+            # Encountered some other per-notification error.
+            return JsonResponse(
+                data={
+                    "msg": "Push error.",
+                    "data": str(exc)
+                },
+                status=400
+            )
+        return JsonResponse(
+            data={
+                "msg": "success",
+                "data": []
+            },
+            status=200
+        )
+
 
 
 def create_user_test(username, password):
@@ -162,12 +225,3 @@ def mark_user_positive(username):
     all_close_contact = list(set(all_close_contact))
     all_close_contact.remove(username)
     print(all_close_contact)
-
-
-# def test():
-    # mark_user_positive("u1")
-    # d1 = datetime.datetime.strptime('2022-10-16T05:45:00.000Z', '%Y-%m-%dT%H:%M:%S.%f%z').astimezone(ZoneInfo('Australia/Melbourne')).strftime('%Y-%m-%d %H:%M:%S')
-    # print("d1",d1)
-
-
-# test()
