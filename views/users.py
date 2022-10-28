@@ -127,7 +127,7 @@ def push(request: HttpRequest):
         messages = []
         for user_email in all_close_contact:
             # filter by close contact email
-            filter_close_contact = {"email": email}
+            filter_close_contact = {"email": user_email}
             # 密接赋黄码
             profile_collection.update_one(
                 filter=filter_close_contact, update=new_values
