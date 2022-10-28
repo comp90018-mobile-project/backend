@@ -126,12 +126,14 @@ def push(request: HttpRequest):
         # Push tokens
         messages = []
         for user_email in all_close_contact:
+            # filter by close contact email
+            filter_close_contact = {"email": email}
             # 密接赋黄码
             profile_collection.update_one(
-                filter=filter_, update=new_values
+                filter=filter_close_contact, update=new_values
             )
             # 拿token
-            res = profile_collection.find_one(filter_)
+            res = profile_collection.find_one(filter_close_contact)
             token = res.get("push_token", "")
             username = res.get("username", "")
             message = PushMessage(to=token, body=f"{username} has been confirmed with COVID-19!", title="COVID Warning")
