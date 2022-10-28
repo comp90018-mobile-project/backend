@@ -110,7 +110,7 @@ def push(request: HttpRequest):
         all_close_contact = []
         for event in event_participated + event_hosted:
             event: dict
-            event_time = event.get("created_at")
+            event_time = event.get("start_time")
             participants = event.get("participants")
             # print(datetime.datetime.strptime(event_time, "%Y-%m-%d %H:%M:%S"))
             # print(type(start_time))
@@ -225,3 +225,4 @@ def mark_user_positive(username):
     all_close_contact = list(set(all_close_contact))
     all_close_contact.remove(username)
     print(all_close_contact)
+
