@@ -98,6 +98,9 @@ def push(request: HttpRequest):
     if request.method == "POST":
         params = copy.deepcopy(eval(request.body))
         email: str = params.get("email")
+        profile_collection.update_one(
+            filter={'email': email}, update={"$set": {"health_status": "positive"}}
+        )
         possible_result = profile_collection.find_one({"email": email})
         event_participated = possible_result.get("event_participated")
         event_hosted = possible_result.get("event_hosted")
@@ -120,7 +123,6 @@ def push(request: HttpRequest):
                     all_close_contact.append(participant.get("email"))
         # 去重
         new_values = {"$set": {"health_status": "pending"}}
-        filter_ = {"email": email}
         all_close_contact = list(set(all_close_contact))
         all_close_contact.remove(email)
         # Push tokens
@@ -171,11 +173,10 @@ def push(request: HttpRequest):
         return JsonResponse(
             data={
                 "msg": "success",
-                "data": []
+                "data": all_close_contact
             },
             status=200
         )
-
 
 
 def create_user_test(username, password):
@@ -227,4 +228,3 @@ def mark_user_positive(username):
     all_close_contact = list(set(all_close_contact))
     all_close_contact.remove(username)
     print(all_close_contact)
-
