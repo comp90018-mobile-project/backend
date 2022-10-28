@@ -56,10 +56,10 @@ def events(request: HttpRequest):
                 duration_mins = 180
             d = datetime.timedelta(minutes=duration_mins)
             end_time = start_time + d
-            print(end_time)
+            # print(end_time)
             if datetime.datetime.strptime(now, "%Y-%m-%d %H:%M:%S") > end_time:
                 event_collection.update_one(filter={"_id": ObjectId(event_id)}, update={"$set": {"active": False}})
-                print(event_id,False)
+                # print(event_id,False)
 
 
         return JsonResponse(
