@@ -140,7 +140,7 @@ def push(request: HttpRequest):
             res = profile_collection.find_one(filter_close_contact)
             token = res.get("push_token", "")
             username = res.get("username", "")
-            message = PushMessage(to=token, body=f"{username} has been confirmed with COVID-19!", title="COVID Warning")
+            message = PushMessage(to=token, body=f"Hi, you have been identified as a close contact of a person with confirmed COVID-19.", title="COVID Warning")
             messages.append(message)
         try:
             response = PushClient().publish_multiple(messages)
