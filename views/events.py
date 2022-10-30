@@ -110,10 +110,19 @@ def events(request: HttpRequest):
         )
         # Append this event to user's event_history
         user = profile_collection.find_one({"email": organiser})
+        # Append this event to user's event_hosted
+        user_event_hosted = user["event_hosted"]
+        user_event_hosted.append(new_event["_id"])
         event_history = user["event_history"]
         # Store ID only in event history
         event_history.append(new_event["_id"])
-        profile_collection.update_one(filter={"email": organiser}, update={"$set": {"event_history": event_history}})
+        profile_collection.update_one(
+            filter={"email": organiser}, 
+            update={"$set": {
+                "event_history": event_history,
+                "event_hosted": user_event_hosted
+            }}
+        )
         return JsonResponse(
             data={
                 "msg": "success",
