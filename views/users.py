@@ -27,8 +27,6 @@ event_collection: Collection = client.COMP90018.Events
 
 
 @csrf_exempt
-# @api_view(["POST"])
-# @renderer_classes([JSONRenderer])
 def create_user(request: HttpRequest):
     """Add a new user to the system."""
     data = request.body
@@ -61,7 +59,6 @@ def create_user(request: HttpRequest):
 
 
 @csrf_exempt
-# @renderer_classes([JSONRenderer])
 def profile(request: HttpRequest):
     """Get user profile"""
     if request.method == "GET":
@@ -76,8 +73,6 @@ def profile(request: HttpRequest):
         )
     elif request.method == "POST":
         params = copy.deepcopy(eval(request.body))
-        # if request.POST:
-        #     params = request.POST
         email: str = params.get("email")
         query: dict = params.get("query")
         query_filter = {"email": email}
@@ -88,7 +83,7 @@ def profile(request: HttpRequest):
         return JsonResponse(
             data={
                 "msg": "Update OK",
-                "data": []
+                "data": res.modified_count
             }
         )
 
@@ -119,10 +114,8 @@ def push(request: HttpRequest):
             participants = event.get("participants")
             event_time = datetime.datetime.strptime(event_time, "%Y-%m-%dT%H:%M:%S.%fZ")
             if event_time > start_time:
-                # all_close_contact += event.get("participants")
                 for participant in participants:
                     all_close_contact.append(participant.get("email"))
-        # 去重
         new_values = {"$set": {"health_status": "pending"}}
         all_close_contact = list(set(all_close_contact))
         if email in all_close_contact:
@@ -152,26 +145,6 @@ def push(request: HttpRequest):
                 },
                 status=400
             )
-        # try:
-        #     response.validate_response()
-        # except DeviceNotRegisteredError as err:
-        #     # Mark the push token as inactive
-        #     return JsonResponse(
-        #         data={
-        #             "msg": "This token is not activated.",
-        #             "data": str(err)
-        #         },
-        #         status=400
-        #     )
-        # except PushTicketError as exc:
-        #     # Encountered some other per-notification error.
-        #     return JsonResponse(
-        #         data={
-        #             "msg": "Push error.",
-        #             "data": str(exc)
-        #         },
-        #         status=400
-        #     )
         return JsonResponse(
             data={
                 "msg": "success",

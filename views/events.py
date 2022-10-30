@@ -27,7 +27,6 @@ now = arrow.now(tz="Australia/Melbourne").format("YYYY-MM-DD HH:mm:ss")
 
 
 @csrf_exempt
-# @renderer_classes([JSONRenderer])
 def events(request: HttpRequest):
     if request.method == "GET":
         data = event_collection.find()
@@ -35,31 +34,29 @@ def events(request: HttpRequest):
         for d in data:
             res.append(d)
         res = json.loads(json.dumps(res, cls=MongoJsonEncoder))
-        for event in res:
-            event_id = event['_id']
-            s_time = event['settings']['start_time']
-            s_time = datetime.datetime.strptime(s_time, '%Y-%m-%dT%H:%M:%S.%f%z').astimezone(ZoneInfo('Australia/Melbourne')).strftime('%Y-%m-%d %H:%M:%S')
-            start_time = datetime.datetime.strptime(s_time, "%Y-%m-%d %H:%M:%S")
-            duration = event['settings']['duration']
-            duration_mins = 0
-            if duration == "30 mins":
-                duration_mins = 30
-            elif duration == "1 hour":
-                duration_mins = 60
-            elif duration == "1 hour 30 mins":
-                duration_mins = 90
-            elif duration == "2 hours":
-                duration_mins = 120
-            elif duration == "2 hours 30 mins":
-                duration_mins = 150
-            else:
-                duration_mins = 180
-            d = datetime.timedelta(minutes=duration_mins)
-            end_time = start_time + d
-            # print(end_time)
-            if datetime.datetime.strptime(now, "%Y-%m-%d %H:%M:%S") > end_time:
-                event_collection.update_one(filter={"_id": ObjectId(event_id)}, update={"$set": {"active": False}})
-                # print(event_id,False)
+        # for event in res:
+        #     event_id = event['_id']
+        #     s_time = event['settings']['start_time']
+        #     s_time = datetime.datetime.strptime(s_time, '%Y-%m-%dT%H:%M:%S.%f%z').astimezone(ZoneInfo('Australia/Melbourne')).strftime('%Y-%m-%d %H:%M:%S')
+        #     start_time = datetime.datetime.strptime(s_time, "%Y-%m-%d %H:%M:%S")
+        #     duration = event['settings']['duration']
+        #     duration_mins = 0
+        #     if duration == "30 mins":
+        #         duration_mins = 30
+        #     elif duration == "1 hour":
+        #         duration_mins = 60
+        #     elif duration == "1 hour 30 mins":
+        #         duration_mins = 90
+        #     elif duration == "2 hours":
+        #         duration_mins = 120
+        #     elif duration == "2 hours 30 mins":
+        #         duration_mins = 150
+        #     else:
+        #         duration_mins = 180
+            # d = datetime.timedelta(minutes=duration_mins)
+            # end_time = start_time + d
+            # if datetime.datetime.strptime(now, "%Y-%m-%d %H:%M:%S") > end_time:
+            #     event_collection.update_one(filter={"_id": ObjectId(event_id)}, update={"$set": {"active": False}})
 
 
         return JsonResponse(
@@ -84,21 +81,10 @@ def events(request: HttpRequest):
             },
         )
     elif request.method == "POST":
-        # params = copy.deepcopy(request.body)
-        # if request.POST:
-        #     params = request.POST
-        # name = params.get("name")
-        # organiser = params.get("organiser")
-        # preview = params.get("preview")
-        # longitude = params.get("longitude")
-        # latitude = params.get("latitude")
-        # participants = params.get("participants")
-        # settings = params.get("settings")
-        # images = params.get("images")
         data = request.body
         data_dict = json.loads(data.decode("utf-8"))
         name = data_dict["name"]
-        organiser = data_dict["organiser"]
+        organiser = data_dict["organiser"]  # email
         preview = data_dict["preview"]
         longitude = data_dict["longitude"]
         latitude = data_dict["latitude"]
@@ -114,7 +100,7 @@ def events(request: HttpRequest):
             "participants": participants,
             "settings": settings,
             "images": images,
-            "active": True,
+            "active": "false",
             "created_at": now
         }
         # Keep a unique reference to this new event
@@ -122,6 +108,12 @@ def events(request: HttpRequest):
             collection=event_collection,
             document=new_event
         )
+        # Append this event to user's event_history
+        user = profile_collection.find_one({"email": organiser})
+        event_history = user["event_history"]
+        # Store ID only in event history
+        event_history.append(new_event["_id"])
+        profile_collection.update_one(filter={"email": organiser}, update={"$set": {"event_history": event_history}})
         return JsonResponse(
             data={
                 "msg": "success",
@@ -138,17 +130,6 @@ def event_chats(request: HttpRequest):
         {"_id": ObjectId(event_id)},
         {"$set": {"chat": chat_info}}
     )
-    """
-    [
-        {
-            _id: 1,
-            sender_name: ZIAWANG1,
-            time: xxx,
-            content: ,
-            mention
-        }
-    ]
-    """
     return JsonResponse(
         data={
             "msg": "Update OK",
