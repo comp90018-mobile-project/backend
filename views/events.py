@@ -49,16 +49,15 @@ def get_event_by_id(request: HttpRequest):
 @csrf_exempt
 def events(request: HttpRequest):
     if request.method == "GET":
-        if request.GET["event_id"] is not None:
+        if request.GET.get("event_id") is not None:
             event_id = request.GET["event_id"]
             event = event_collection.find_one({"_id": ObjectId(event_id)})
             if event:
                 return JsonResponse(
                     data={
                         "msg": "success",
-                        "data": event
-                    },
-                    json_dumps_params={"cls": MongoJsonEncoder}
+                        "data": json.loads(json.dumps(event, cls=MongoJsonEncoder))
+                    }
                 )
             else:
                 return JsonResponse(
