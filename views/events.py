@@ -25,46 +25,59 @@ event_collection: Collection = client.COMP90018.Events
 now = arrow.now(tz="Australia/Melbourne").format("YYYY-MM-DD HH:mm:ss")
 
 
+@csrf_exempt
+def get_event_by_id(request: HttpRequest):
+    if request.GET:
+        event_id = request.GET.get("event_id")
+        event = event_collection.find_one({"_id": ObjectId(event_id)})
+        if event:
+            return JsonResponse(
+                data={
+                    "msg": "success",
+                    "data": event
+                },
+                json_dumps_params={"cls": MongoJsonEncoder}
+            )
+        else:
+            return JsonResponse(
+                data={
+                    "msg": "event not found"
+                }
+            )
+
 
 @csrf_exempt
 def events(request: HttpRequest):
     if request.method == "GET":
-        data = event_collection.find()
-        res = []
-        for d in data:
-            res.append(d)
-        res = json.loads(json.dumps(res, cls=MongoJsonEncoder))
-        # for event in res:
-        #     event_id = event['_id']
-        #     s_time = event['settings']['start_time']
-        #     s_time = datetime.datetime.strptime(s_time, '%Y-%m-%dT%H:%M:%S.%f%z').astimezone(ZoneInfo('Australia/Melbourne')).strftime('%Y-%m-%d %H:%M:%S')
-        #     start_time = datetime.datetime.strptime(s_time, "%Y-%m-%d %H:%M:%S")
-        #     duration = event['settings']['duration']
-        #     duration_mins = 0
-        #     if duration == "30 mins":
-        #         duration_mins = 30
-        #     elif duration == "1 hour":
-        #         duration_mins = 60
-        #     elif duration == "1 hour 30 mins":
-        #         duration_mins = 90
-        #     elif duration == "2 hours":
-        #         duration_mins = 120
-        #     elif duration == "2 hours 30 mins":
-        #         duration_mins = 150
-        #     else:
-        #         duration_mins = 180
-            # d = datetime.timedelta(minutes=duration_mins)
-            # end_time = start_time + d
-            # if datetime.datetime.strptime(now, "%Y-%m-%d %H:%M:%S") > end_time:
-            #     event_collection.update_one(filter={"_id": ObjectId(event_id)}, update={"$set": {"active": False}})
-
-
-        return JsonResponse(
-            data={
-                "msg": "success",
-                "data": res
-            },
-        )
+        if request.GET["event_id"] is not None:
+            event_id = request.GET["event_id"]
+            event = event_collection.find_one({"_id": ObjectId(event_id)})
+            if event:
+                return JsonResponse(
+                    data={
+                        "msg": "success",
+                        "data": event
+                    },
+                    json_dumps_params={"cls": MongoJsonEncoder}
+                )
+            else:
+                return JsonResponse(
+                    data={
+                        "msg": "event not found"
+                    }
+                )
+        else:
+            data = event_collection.find()
+            res = []
+            for d in data:
+                res.append(d)
+            res = json.loads(json.dumps(res, cls=MongoJsonEncoder))
+            return JsonResponse(
+                data={
+                    "msg": "success",
+                    "data": res
+                },
+            )
     elif request.method == "PATCH":
         params = copy.deepcopy(eval(request.body))
         event_id: str = params.get("event_id")
@@ -117,7 +130,7 @@ def events(request: HttpRequest):
         # Store ID only in event history
         event_history.append(new_event["_id"])
         profile_collection.update_one(
-            filter={"email": organiser}, 
+            filter={"email": organiser},
             update={"$set": {
                 "event_history": event_history,
                 "event_hosted": user_event_hosted
@@ -129,6 +142,7 @@ def events(request: HttpRequest):
                 "data": new_event
             },
         )
+
 
 @csrf_exempt
 def event_chats(request: HttpRequest):
