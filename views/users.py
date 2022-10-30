@@ -27,8 +27,6 @@ event_collection: Collection = client.COMP90018.Events
 
 
 @csrf_exempt
-# @api_view(["POST"])
-# @renderer_classes([JSONRenderer])
 def create_user(request: HttpRequest):
     """Add a new user to the system."""
     data = request.body
@@ -61,7 +59,6 @@ def create_user(request: HttpRequest):
 
 
 @csrf_exempt
-# @renderer_classes([JSONRenderer])
 def profile(request: HttpRequest):
     """Get user profile"""
     if request.method == "GET":
@@ -76,8 +73,6 @@ def profile(request: HttpRequest):
         )
     elif request.method == "POST":
         params = copy.deepcopy(eval(request.body))
-        # if request.POST:
-        #     params = request.POST
         email: str = params.get("email")
         query: dict = params.get("query")
         query_filter = {"email": email}
@@ -88,7 +83,7 @@ def profile(request: HttpRequest):
         return JsonResponse(
             data={
                 "msg": "Update OK",
-                "data": []
+                "data": res.modified_count
             }
         )
 
@@ -102,8 +97,9 @@ def push(request: HttpRequest):
             filter={'email': email}, update={"$set": {"health_status": "positive"}}
         )
         possible_result = profile_collection.find_one({"email": email})
-        event_participated = possible_result.get("event_participated")
-        event_hosted = possible_result.get("event_hosted")
+        # event_participated = possible_result.get("event_participated")
+        # event_hosted = possible_result.get("event_hosted")
+        event_history = possible_result.get("event_hosted")
         tod = datetime.datetime.now()
         d = datetime.timedelta(days=3)
         start_time = tod - d
@@ -111,19 +107,16 @@ def push(request: HttpRequest):
         # # start_time = start_time.strftime("%Y-%m-%d %H:%M:%S")
         # # find all close contact
         all_close_contact = []
-        for event in event_participated + event_hosted:
+        for event in event_history:
             event: dict
             event_settings = event.get("settings")
             event_time = event_settings.get("start_time")
             participants = event.get("participants")
             event_time = datetime.datetime.strptime(event_time, "%Y-%m-%dT%H:%M:%S.%fZ")
             if event_time > start_time:
-                # all_close_contact += event.get("participants")
                 for participant in participants:
                     all_close_contact.append(participant.get("email"))
-        # 去重
         new_values = {"$set": {"health_status": "pending"}}
-        filter_ = {"email": email}
         all_close_contact = list(set(all_close_contact))
         if email in all_close_contact:
             all_close_contact.remove(email)
@@ -140,7 +133,7 @@ def push(request: HttpRequest):
             res = profile_collection.find_one(filter_close_contact)
             token = res.get("push_token", "")
             username = res.get("username", "")
-            message = PushMessage(to=token, body=f"{username} has been confirmed with COVID-19!", title="COVID Warning")
+            message = PushMessage(to=token, body=f"Hi, you have been identified as a close contact of a person with confirmed COVID-19.", title="COVID Warning")
             messages.append(message)
         try:
             response = PushClient().publish_multiple(messages)
@@ -152,26 +145,6 @@ def push(request: HttpRequest):
                 },
                 status=400
             )
-        # try:
-        #     response.validate_response()
-        # except DeviceNotRegisteredError as err:
-        #     # Mark the push token as inactive
-        #     return JsonResponse(
-        #         data={
-        #             "msg": "This token is not activated.",
-        #             "data": str(err)
-        #         },
-        #         status=400
-        #     )
-        # except PushTicketError as exc:
-        #     # Encountered some other per-notification error.
-        #     return JsonResponse(
-        #         data={
-        #             "msg": "Push error.",
-        #             "data": str(exc)
-        #         },
-        #         status=400
-        #     )
         return JsonResponse(
             data={
                 "msg": "success",
@@ -179,7 +152,6 @@ def push(request: HttpRequest):
             },
             status=200
         )
-
 
 
 def create_user_test(username, password):
@@ -231,4 +203,3 @@ def mark_user_positive(username):
     all_close_contact = list(set(all_close_contact))
     all_close_contact.remove(username)
     print(all_close_contact)
-
