@@ -107,7 +107,9 @@ def push(request: HttpRequest):
         # # start_time = start_time.strftime("%Y-%m-%d %H:%M:%S")
         # # find all close contact
         all_close_contact = []
-        for event in event_history:
+        for event_id in event_history:
+            # event is event_id
+            event = event_collection.find_one({"_id": ObjectId(event_id)})
             event: dict
             event_settings = event.get("settings")
             event_time = event_settings.get("start_time")
@@ -115,7 +117,7 @@ def push(request: HttpRequest):
             event_time = datetime.datetime.strptime(event_time, "%Y-%m-%dT%H:%M:%S.%fZ")
             if event_time > start_time:
                 for participant in participants:
-                    all_close_contact.append(participant.get("email"))
+                    all_close_contact.append(participant)
         new_values = {"$set": {"health_status": "pending"}}
         all_close_contact = list(set(all_close_contact))
         if email in all_close_contact:
