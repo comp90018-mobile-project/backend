@@ -51,6 +51,13 @@ def events(request: HttpRequest):
     if request.method == "GET":
         if request.GET.get("event_id") is not None:
             event_id = request.GET["event_id"]
+            if event_id == "undefined":
+                return JsonResponse(
+                    data={
+                        "msg": "error",
+                        "data": "ObjectId is undefined"
+                    },status=400
+                )
             event = event_collection.find_one({"_id": ObjectId(event_id)})
             if event:
                 return JsonResponse(
@@ -158,3 +165,26 @@ def event_chats(request: HttpRequest):
             "data": []
         }
     )
+
+@csrf_exempt
+def delete_event(request: HttpRequest):
+    if request.method == "POST":
+        data = request.body
+        data_dict = json.loads(data.decode("utf-8"))
+        if data_dict.get("event_id") is not None:
+            event_collection.delete_one({"_id": ObjectId(data_dict.get("event_id"))})
+            return JsonResponse(
+                data={
+                    "msg": "Delete OK",
+                    "data": data_dict.get("event_id")
+                }
+            )
+        else:
+            # delete all
+            event_collection.delete_many({})
+            return JsonResponse(
+                data={
+                    "msg": "Delete All OK",
+                    "data": []
+                }
+            )

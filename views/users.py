@@ -44,7 +44,7 @@ def create_user(request: HttpRequest):
         "email": email,
         "event_participated": [],
         "event_hosted": [],
-        # "event_history": [],
+        "event_history": [],
         "push_token": '',
         "health_status": "negative",
         "avatar": config.DEFAULT_AVATAR
@@ -80,10 +80,12 @@ def profile(request: HttpRequest):
         res = profile_collection.update_one(
             filter=query_filter, update=new_values
         )
+        newly_updated_user = profile_collection.find_one({"email": email})
         return JsonResponse(
             data={
                 "msg": "Update OK",
-                "data": res.modified_count
+                "data": json.loads(
+                    json.dumps(newly_updated_user, cls=MongoJsonEncoder))
             }
         )
 
@@ -111,7 +113,7 @@ def push(request: HttpRequest):
             # event is event_id
             event = event_collection.find_one({"_id": ObjectId(event_id)})
             event: dict
-            event_settings = event.get("settings")
+            event_settings: dict = event.get("settings")
             event_time = event_settings.get("start_time")
             participants = event.get("participants")
             event_time = datetime.datetime.strptime(event_time, "%Y-%m-%dT%H:%M:%S.%fZ")
