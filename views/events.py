@@ -93,6 +93,23 @@ def events(request: HttpRequest):
         res = event_collection.update_one(
             filter=query_filter, update=new_values
         )
+        event = event_collection.find_one({"_id": ObjectId(event_id)})
+        event_active = event.get("active")
+        if event_active == "ended":
+            organiser = event.get("organiser")  # email
+            participants = event.get("participants")  # Array (email)
+            # update organiser hosted array
+            profile_collection.update_one(
+                filter={'email': organiser}, update={"$set": {"event_hosted": []}}
+            )
+            # update participants participated array
+            for user_id in participants:
+                profile_collection.update_one(
+                    filter={'email': user_id},
+                    update={"$set": {"event_participated": []}}
+                )
+
+
         return JsonResponse(
             data={
                 "msg": "Update OK",
@@ -172,6 +189,29 @@ def delete_event(request: HttpRequest):
         data = request.body
         data_dict = json.loads(data.decode("utf-8"))
         if data_dict.get("event_id") is not None:
+            event_id = data_dict.get("event_id")
+            event = event_collection.find_one({"_id": ObjectId(event_id)})
+            organiser = event.get("organiser") # email
+            participants = event.get("participants") # Array (email)
+            # 活动发起人
+            organiser_user = profile_collection.find_one({"email": organiser})
+            organiser_event_history = organiser_user.get("event_history")
+            if event_id in organiser_event_history:
+                organiser_event_history.remove(event_id)
+            profile_collection.update_one(
+                filter={'email': organiser}, update={"$set": {"event_hosted": [], "event_history":organiser_event_history}}
+            )
+            # 活动参与者
+            for user_id in participants:
+                user = profile_collection.find_one({"email": user_id})
+                user_event_history = user.get("event_history")
+                if event_id in user_event_history:
+                    user_event_history.remove(event_id)
+                profile_collection.update_one(
+                    filter={'email': user_id}, update={"$set": {"event_participated": [], "event_history": user_event_history}}
+                )
+
+            # 删除event
             event_collection.delete_one({"_id": ObjectId(data_dict.get("event_id"))})
             return JsonResponse(
                 data={
