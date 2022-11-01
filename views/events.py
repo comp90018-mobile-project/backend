@@ -94,10 +94,10 @@ def events(request: HttpRequest):
             filter=query_filter, update=new_values
         )
         event = event_collection.find_one({"_id": ObjectId(event_id)})
+        organiser = event.get("organiser")  # email
+        participants = event.get("participants")  # Array (email)
         event_active = event.get("active")
         if event_active == "ended":
-            organiser = event.get("organiser")  # email
-            participants = event.get("participants")  # Array (email)
             # update organiser hosted array
             profile_collection.update_one(
                 filter={'email': organiser}, update={"$set": {"event_hosted": []}}
@@ -108,12 +108,14 @@ def events(request: HttpRequest):
                     filter={'email': user_id},
                     update={"$set": {"event_participated": []}}
                 )
+        organiser_user = profile_collection.find_one({"email": organiser})
 
 
         return JsonResponse(
             data={
                 "msg": "Update OK",
-                "data": []
+                "data": json.loads(
+                    json.dumps(organiser_user, cls=MongoJsonEncoder))
             },
         )
     elif request.method == "POST":
@@ -136,7 +138,7 @@ def events(request: HttpRequest):
             "participants": participants,
             "settings": settings,
             "images": images,
-            "active": "false",
+            "active": "pending",
             "created_at": now
         }
         # Keep a unique reference to this new event
