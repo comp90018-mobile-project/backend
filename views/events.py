@@ -230,3 +230,4 @@ def delete_event(request: HttpRequest):
                     "data": []
                 }
             )
+

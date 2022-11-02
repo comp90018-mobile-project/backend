@@ -1,6 +1,7 @@
 from django.urls import path, include
 from . import users as user_api
 from . import events as event_api
+from . import socket_events as e1
 
 urlpatterns = [
     path('users', user_api.create_user, name="create user"),
@@ -8,5 +9,6 @@ urlpatterns = [
     path('events', event_api.events, name="events api"),
     path('events/delete', event_api.delete_event, name="delete one or more events"),
     path('events/chat', event_api.event_chats, name="chat rooms for one event"),
-    path('users/push', user_api.push, name="push notification test")
+    path('users/push', user_api.push, name="push notification test"),
+    path('events/test', e1.events1)
 ]
