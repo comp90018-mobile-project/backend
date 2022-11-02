@@ -8,5 +8,6 @@ urlpatterns = [
     path('events', event_api.events, name="events api"),
     path('events/delete', event_api.delete_event, name="delete one or more events"),
     path('events/chat', event_api.event_chats, name="chat rooms for one event"),
-    path('users/push', user_api.push, name="push notification test")
+    path('users/push', user_api.push, name="push notification test"),
+    path("users/avatars", user_api.getAvatars)
 ]

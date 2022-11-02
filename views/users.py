@@ -57,6 +57,24 @@ def create_user(request: HttpRequest):
         },
     )
 
+@csrf_exempt
+def getAvatars(request: HttpRequest):
+    if request.method == "GET":
+        email = request.GET.get(key="email")
+        res = []
+        email_list = email.split(",")
+        for email in email_list:
+            r = profile_collection.find_one({"email": email})
+            res.append(
+                r.get("avatar", "")
+            )
+        return JsonResponse(
+            data={
+                "msg": "success",
+                "data": json.loads(
+                    json.dumps(res, cls=MongoJsonEncoder))
+            }
+        )
 
 @csrf_exempt
 def profile(request: HttpRequest):
