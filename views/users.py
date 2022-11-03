@@ -117,9 +117,9 @@ def push(request: HttpRequest):
             filter={'email': email}, update={"$set": {"health_status": "positive"}}
         )
         possible_result = profile_collection.find_one({"email": email})
-        # event_participated = possible_result.get("event_participated")
-        # event_hosted = possible_result.get("event_hosted")
-        event_history = possible_result.get("event_hosted")
+        event_participated = possible_result.get("event_participated")
+        event_hosted = possible_result.get("event_hosted")
+        event_history = possible_result.get("event_history")
         tod = datetime.datetime.now()
         d = datetime.timedelta(days=3)
         start_time = tod - d
@@ -127,7 +127,7 @@ def push(request: HttpRequest):
         # # start_time = start_time.strftime("%Y-%m-%d %H:%M:%S")
         # # find all close contact
         all_close_contact = []
-        for event_id in event_history:
+        for event_id in event_history + event_participated + event_hosted:
             # event is event_id
             event = event_collection.find_one({"_id": ObjectId(event_id)})
             event: dict
